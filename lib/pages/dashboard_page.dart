@@ -11,7 +11,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'data_list_page.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  final bool showMenuButton;
+  final VoidCallback? onMenuPressed;
+  const DashboardPage({super.key, this.showMenuButton = false, this.onMenuPressed});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -234,7 +236,13 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _statCard(String title, String value, IconData icon, Color color, {String? caption}) {
-    return Expanded(
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final compact = screenWidth < 700;
+    final cardWidth = screenWidth < 1100
+        ? (screenWidth - 60) / 2
+        : (screenWidth - 390) / 4;
+    return SizedBox(
+      width: cardWidth,
       child: Container(
         constraints: const BoxConstraints(minHeight: 112),
         decoration: BoxDecoration(
@@ -244,14 +252,14 @@ class _DashboardPageState extends State<DashboardPage> {
           boxShadow: [BoxShadow(color: color.withValues(alpha: .10), blurRadius: 20, offset: const Offset(0, 8))],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(17),
+          padding: EdgeInsets.all(compact ? 11 : 17),
           child: Row(children: [
-            Container(width: 54, height: 54, decoration: BoxDecoration(gradient: LinearGradient(colors: [color, color.withValues(alpha: .72)]), borderRadius: BorderRadius.circular(17), boxShadow: [BoxShadow(color: color.withValues(alpha: .25), blurRadius: 10, offset: const Offset(0, 5))]), child: Icon(icon, color: Colors.white, size: 29)),
-            const SizedBox(width: 13),
+            Container(width: compact ? 38 : 54, height: compact ? 38 : 54, decoration: BoxDecoration(gradient: LinearGradient(colors: [color, color.withValues(alpha: .72)]), borderRadius: BorderRadius.circular(17), boxShadow: [BoxShadow(color: color.withValues(alpha: .25), blurRadius: 10, offset: const Offset(0, 5))]), child: Icon(icon, color: Colors.white, size: 29)),
+            SizedBox(width: compact ? 8 : 13),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF5D6B78))),
+              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: compact ? 10 : 13, fontWeight: FontWeight.w700, color: Color(0xFF5D6B78))),
               const SizedBox(height: 3),
-              Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: color)),
+              Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: compact ? 20 : 25, fontWeight: FontWeight.w900, color: color)),
               if (caption != null) Text(caption, style: const TextStyle(fontSize: 11, color: Color(0xFF8A969F))),
             ])),
           ]),
@@ -296,22 +304,62 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _donutChart() {
     final total = totalAll();
+    final compact = MediaQuery.sizeOf(context).width < 700;
+    final chart = SizedBox(
+      width: compact ? 150 : 170,
+      height: compact ? 150 : 170,
+      child: CustomPaint(
+        painter: _DonutPainter(
+          types: types,
+          values: types.map(totalFor).toList(),
+          colors: types.map(_menuColor).toList(),
+        ),
+      ),
+    );
+
+    Widget legendItem(int i) {
+      final n = totalFor(types[i]);
+      final share = total == 0 ? 0 : (n / total * 100).round();
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 7),
+        child: Row(
+          children: [
+            Container(width: 10, height: 10, decoration: BoxDecoration(color: _menuColor(types[i]), shape: BoxShape.circle)),
+            const SizedBox(width: 8),
+            Expanded(child: Text(types[i].title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
+            const SizedBox(width: 5),
+            Text('$n ($share%)', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF687681))),
+          ],
+        ),
+      );
+    }
+
+    if (compact) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(child: chart),
+          const SizedBox(height: 14),
+          ...List.generate(types.length, legendItem),
+        ],
+      );
+    }
+
     return SizedBox(
       height: 245,
-      child: Row(children: [
-        SizedBox(width: 170, height: 170, child: CustomPaint(painter: _DonutPainter(types: types, values: types.map(totalFor).toList(), colors: types.map(_menuColor).toList()))),
-        const SizedBox(width: 18),
-        Expanded(child: ListView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: types.length, itemBuilder: (_, i) {
-          final n = totalFor(types[i]);
-          final share = total == 0 ? 0 : (n / total * 100).round();
-          return Padding(padding: const EdgeInsets.only(bottom: 7), child: Row(children: [Container(width: 10, height: 10, decoration: BoxDecoration(color: _menuColor(types[i]), shape: BoxShape.circle)), const SizedBox(width: 8), Expanded(child: Text(types[i].title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))), Text('$n ($share%)', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF687681)))]));
-        }))
-      ]),
+      child: Row(
+        children: [
+          chart,
+          const SizedBox(width: 18),
+          Expanded(child: Column(children: List.generate(types.length, legendItem))),
+        ],
+      ),
     );
   }
 
   Widget _headerAction({required IconData icon, required String label, required Color color, required VoidCallback? onPressed}) {
     final enabled = onPressed != null;
+    final compact = MediaQuery.sizeOf(context).width < 620;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
       child: Material(
@@ -322,14 +370,16 @@ class _DashboardPageState extends State<DashboardPage> {
           onTap: onPressed,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            constraints: const BoxConstraints(minWidth: 54),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            constraints: BoxConstraints(minWidth: compact ? 38 : 54, minHeight: 38),
+            padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 10, vertical: 8),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(icon, color: Colors.white, size: 19),
-                const SizedBox(width: 5),
-                Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
+                if (!compact) ...[
+                  const SizedBox(width: 5),
+                  Text(label, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
+                ],
               ],
             ),
           ),
@@ -346,11 +396,19 @@ class _DashboardPageState extends State<DashboardPage> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'Dashboard • ภาพรวมความก้าวหน้า',
-          style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF17324A)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF17324A), fontSize: MediaQuery.sizeOf(context).width < 380 ? 11 : (MediaQuery.sizeOf(context).width < 500 ? 13 : 20)),
         ),
         actions: [
+          if (widget.showMenuButton)
+            IconButton(
+              tooltip: 'เปิดเมนู',
+              icon: const Icon(Icons.menu_rounded, color: Color(0xFF17324A)),
+              onPressed: widget.onMenuPressed,
+            ),
           _headerAction(
             icon: Icons.refresh_rounded,
             label: 'รีเฟรช',
@@ -410,16 +468,21 @@ class _DashboardPageState extends State<DashboardPage> {
                       ),
                     ),
                   )
-                : RefreshIndicator(
+                : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final narrow = constraints.maxWidth < 700;
+                      final medium = constraints.maxWidth < 1100;
+                      final horizontalPadding = narrow ? 12.0 : (medium ? 16.0 : 20.0);
+                      return RefreshIndicator(
                     onRefresh: load,
                     child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 6, 20, 46),
+                      padding: EdgeInsets.fromLTRB(horizontalPadding, 6, horizontalPadding, 32),
                       children: [
                         _glassCard(
                           padding: EdgeInsets.zero,
                           radius: 28,
                           child: Container(
-                            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                            padding: EdgeInsets.fromLTRB(narrow ? 14 : 24, narrow ? 14 : 20, narrow ? 14 : 24, narrow ? 14 : 20),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 begin: Alignment.topLeft,
@@ -428,7 +491,28 @@ class _DashboardPageState extends State<DashboardPage> {
                               ),
                               borderRadius: BorderRadius.circular(28),
                             ),
-                            child: Row(
+                            child: narrow
+                                ? Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(children: [
+                                        Container(
+                                          width: 52,
+                                          height: 52,
+                                          padding: const EdgeInsets.all(5),
+                                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
+                                          child: ClipRRect(borderRadius: BorderRadius.circular(11), child: Image.asset('assets/logo_skr.jpg', fit: BoxFit.contain)),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        const Expanded(child: Text('ห้องสมุดประชาชนอำเภอหนองจิก', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900))),
+                                      ]),
+                                      const SizedBox(height: 8),
+                                      const Text('งานการศึกษาตลอดชีวิต • ระบบคลังข้อมูลแหล่งเรียนรู้', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                                      const SizedBox(height: 5),
+                                      const Text('เชื่อมโยงแหล่งเรียนรู้ สู่การเรียนรู้ตลอดชีวิต', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                                    ],
+                                  )
+                                : Row(
                               children: [
                                 Container(
                                   width: 72,
@@ -474,19 +558,43 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         ),
                         const SizedBox(height: 18),
-                        Row(
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
                           children: [
                             _statCard('ตำบลทั้งหมด', '${subdistricts.length}', Icons.location_city_rounded, const Color(0xFF6A4CFF), caption: 'พื้นที่รับผิดชอบ'),
-                            const SizedBox(width: 12),
                             _statCard('ข้อมูลทั้งหมด', '${totalAll()}', Icons.dataset_rounded, const Color(0xFF008E83), caption: 'รายการในระบบ'),
-                            const SizedBox(width: 12),
                             _statCard('ตำบลที่เริ่มส่งข้อมูล', '${activeSubdistricts()}', Icons.groups_rounded, const Color(0xFF1689E5), caption: 'จาก ${subdistricts.length} ตำบล'),
-                            const SizedBox(width: 12),
                             _statCard('ความก้าวหน้า', pct(overallProgress()), Icons.insights_rounded, const Color(0xFFF06A8D), caption: 'ภาพรวม 8 เมนู'),
                           ],
                         ),
                         const SizedBox(height: 18),
-                        Row(
+                        if (narrow) ...[
+                          _glassCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _sectionTitle('จำนวนข้อมูลแยกตามเมนู', 'เปรียบเทียบจำนวนรายการของทั้ง 8 เมนู', Icons.bar_chart_rounded, const Color(0xFF1689E5)),
+                                const SizedBox(height: 10),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: SizedBox(width: 600, height: 220, child: _barChart()),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _glassCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _sectionTitle('สัดส่วนข้อมูล', 'ภาพรวมการกระจายข้อมูลแต่ละเมนู', Icons.donut_large_rounded, const Color(0xFF7B5CFF)),
+                                const SizedBox(height: 10),
+                                _donutChart(),
+                              ],
+                            ),
+                          ),
+                        ] else Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
@@ -586,9 +694,70 @@ class _DashboardPageState extends State<DashboardPage> {
                             children: [
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                                child: _sectionTitle('ตำบลไหนเพิ่มข้อมูลอะไรแล้วบ้าง', 'เลื่อนซ้าย–ขวาเพื่อดูเมนูทั้งหมด', Icons.table_chart_rounded, const Color(0xFF087F70)),
+                                child: _sectionTitle('ตำบลไหนเพิ่มข้อมูลอะไรแล้วบ้าง', narrow ? 'สรุปข้อมูลแยกตามตำบล' : 'เลื่อนซ้าย–ขวาเพื่อดูเมนูทั้งหมด', Icons.table_chart_rounded, const Color(0xFF087F70)),
                               ),
                               const SizedBox(height: 8),
+                              if (narrow) ...[
+                                // Mobile-friendly alternative to the wide desktop matrix.
+                                // Each subdistrict becomes a card so values are never clipped
+                                // and users do not need horizontal scrolling to read them.
+                                ...subdistricts.map((s) {
+                                  final started = categoriesStarted(s);
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 10),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: .86),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: const Color(0xFFDCEBE8)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(s, style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF17324A), fontSize: 14)),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                              decoration: BoxDecoration(color: const Color(0xFFE1F2EF), borderRadius: BorderRadius.circular(20)),
+                                              child: Text('$started/${types.length} เมนู', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Color(0xFF087F70))),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        _progressBar(progressFor(s), color: const Color(0xFF08A58D), height: 7),
+                                        const SizedBox(height: 10),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: types.map((t) {
+                                            final n = countFor(t, s);
+                                            final color = _menuColor(t);
+                                            return Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                              decoration: BoxDecoration(
+                                                color: n > 0 ? color.withValues(alpha: .10) : const Color(0xFFF2F5F6),
+                                                borderRadius: BorderRadius.circular(10),
+                                                border: Border.all(color: n > 0 ? color.withValues(alpha: .25) : const Color(0xFFE5EAEC)),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(_menuIcon(t), size: 13, color: n > 0 ? color : const Color(0xFF9AA5AB)),
+                                                  const SizedBox(width: 4),
+                                                  Text('${t.title} ${n == 0 ? '—' : n}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: n > 0 ? color : const Color(0xFF7C898F))),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ] else
                               Scrollbar(
                                 controller: _tableHorizontalController,
                                 thumbVisibility: true,
@@ -663,6 +832,8 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ],
                     ),
+                  );
+                    },
                   ),
       ),
     );
