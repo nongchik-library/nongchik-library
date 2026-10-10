@@ -64,6 +64,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     final password = TextEditingController();
     final confirmPassword = TextEditingController();
     String sub = '';
+    String role = 'teacher';
     bool saving = false;
     bool obscurePassword = true;
     bool obscureConfirm = true;
@@ -115,11 +116,28 @@ class _UserManagementPageState extends State<UserManagementPage> {
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<String>(
-                    value: sub.isEmpty ? null : sub,
+                    value: role,
                     decoration: const InputDecoration(
-                      labelText: 'ตำบลที่รับผิดชอบ *',
-                      prefixIcon: Icon(Icons.location_on_outlined),
+                      labelText: 'สิทธิ์ผู้ใช้งาน *',
+                      prefixIcon: Icon(Icons.admin_panel_settings_outlined),
                       border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'teacher', child: Text('คุณครู / Teacher')),
+                      DropdownMenuItem(value: 'admin', child: Text('ผู้ดูแลระบบ / Admin')),
+                    ],
+                    onChanged: (v) => setDialog(() {
+                      role = v ?? 'teacher';
+                      if (role == 'admin') sub = '';
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: sub.isEmpty ? null : sub,
+                    decoration: InputDecoration(
+                      labelText: role == 'teacher' ? 'ตำบลที่รับผิดชอบ *' : 'ตำบลที่รับผิดชอบ (ถ้ามี)',
+                      prefixIcon: const Icon(Icons.location_on_outlined),
+                      border: const OutlineInputBorder(),
                     ),
                     items: subdistricts
                         .map((s) => DropdownMenuItem(value: s, child: Text(s)))
@@ -164,7 +182,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
-                      'บัญชีที่สร้างจะเป็นสิทธิ์ “คุณครู / Teacher” และเปิดใช้งานทันที\nคุณครูสามารถเพิ่มและแก้ไขข้อมูลของตนเองตามตำบลที่รับผิดชอบได้',
+                      'บัญชีจะเปิดใช้งานทันทีตามสิทธิ์ที่เลือก\nคุณครูจะเพิ่มและแก้ไขข้อมูลได้เฉพาะตำบลที่รับผิดชอบ ส่วน Admin จัดการข้อมูลและสิทธิ์ได้ทั้งระบบ',
                     ),
                   ),
                 ],
@@ -178,9 +196,9 @@ class _UserManagementPageState extends State<UserManagementPage> {
             ),
             FilledButton.icon(
               onPressed: saving ? null : () async {
-                if (name.text.trim().isEmpty || email.text.trim().isEmpty || sub.isEmpty) {
+                if (name.text.trim().isEmpty || email.text.trim().isEmpty || (role == 'teacher' && sub.isEmpty)) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('กรุณากรอกชื่อ อีเมล และตำบลให้ครบ')),
+                    SnackBar(content: Text(role == 'teacher' ? 'กรุณากรอกชื่อ อีเมล และตำบลให้ครบ' : 'กรุณากรอกชื่อและอีเมลให้ครบ')),
                   );
                   return;
                 }
@@ -206,6 +224,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                       'email': email.text.trim(),
                       'phone': phone.text.trim(),
                       'subdistrict': sub,
+                      'role': role,
                       'password': password.text,
                     },
                   );
@@ -226,7 +245,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                 }
               },
               icon: const Icon(Icons.person_add),
-              label: Text(saving ? 'กำลังสร้างบัญชี...' : 'เพิ่มคุณครู'),
+              label: Text(saving ? 'กำลังสร้างบัญชี...' : (role == 'admin' ? 'เพิ่มผู้ดูแลระบบ' : 'เพิ่มคุณครู')),
             ),
           ],
         ),
@@ -418,27 +437,87 @@ class _UserManagementPageState extends State<UserManagementPage> {
   Widget build(BuildContext context) {
     final list = filtered;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('จัดการผู้ใช้งานและสิทธิ์'),
-        actions: [
-          IconButton(onPressed: load, icon: const Icon(Icons.refresh)),
-          const SizedBox(width: 8),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF3949AB), Color(0xFF5C6BC0), Color(0xFF9FA8DA)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text(
+              'จัดการผู้ใช้งานและสิทธิ์',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            actions: [
+              IconButton(onPressed: load, icon: const Icon(Icons.refresh_rounded)),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: addTeacher,
         icon: const Icon(Icons.person_add),
         label: const Text('เพิ่มคุณครู'),
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : error != null
-              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('เกิดข้อผิดพลาด\n$error', textAlign: TextAlign.center)))
-              : Column(
-                  children: [
-                    Card(
-                      elevation: 0,
-                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFF3F6FF), Color(0xFFEFF8FF), Color(0xFFF8F5FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: loading
+            ? const Center(child: CircularProgressIndicator())
+            : error != null
+                ? Center(
+                    child: Container(
+                      margin: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .94),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: .08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        'เกิดข้อผิดพลาด\n$error',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFFFFF), Color(0xFFF0F4FF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFC5CAE9)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF3949AB).withValues(alpha: .10),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(14),
                         child: Column(children: [
@@ -478,8 +557,30 @@ class _UserManagementPageState extends State<UserManagementPage> {
                                       : (u['email']?.toString().trim().isNotEmpty ?? false)
                                           ? u['email'].toString()
                                           : 'ผู้ใช้งาน';
-                                  return Card(
-                                    margin: const EdgeInsets.only(bottom: 10),
+                                  final roleAccent = roleColor(role);
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.white,
+                                          roleAccent.withValues(alpha: .055),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(22),
+                                      border: Border.all(
+                                        color: roleAccent.withValues(alpha: .18),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: roleAccent.withValues(alpha: .08),
+                                          blurRadius: 18,
+                                          offset: const Offset(0, 7),
+                                        ),
+                                      ],
+                                    ),
                                     child: ListTile(
                                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                       leading: CircleAvatar(
@@ -518,6 +619,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
                     ),
                   ],
                 ),
+      ),
     );
   }
 }

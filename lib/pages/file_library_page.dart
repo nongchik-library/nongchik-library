@@ -818,21 +818,50 @@ class _FileLibraryPageState extends State<FileLibraryPage> {
     final folderMissing = folderError != null && folderError!.contains('library_folders');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('คลังรูปภาพและเอกสาร', style: TextStyle(fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(onPressed: loadData, tooltip: 'รีเฟรช', icon: const Icon(Icons.refresh_rounded)),
-          const SizedBox(width: 8),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF00695C), Color(0xFF00897B), Color(0xFF42A5F5)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text(
+              'คลังรูปภาพและเอกสาร',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            actions: [
+              IconButton(
+                onPressed: loadData,
+                tooltip: 'รีเฟรช',
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: pickAndUpload,
         icon: const Icon(Icons.upload_file_rounded),
         label: const Text('อัปโหลดไฟล์'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 110),
-        children: [
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFF0FAF8), Color(0xFFEAF4FF), Color(0xFFF8F5FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 110),
+          children: [
           Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
@@ -1007,9 +1036,10 @@ class _FileLibraryPageState extends State<FileLibraryPage> {
                 FilledButton.icon(onPressed: pickAndUpload, icon: const Icon(Icons.upload_file_rounded), label: const Text('เริ่มอัปโหลดไฟล์')),
               ]),
             )
-          else
-            ...list.map(_fileCard),
-        ],
+            else
+              ...list.map(_fileCard),
+          ],
+        ),
       ),
     );
   }

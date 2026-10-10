@@ -151,20 +151,66 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('แผนที่แหล่งเรียนรู้', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
-        ],
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF00796B), Color(0xFF26A69A), Color(0xFF80CBC4)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text(
+              'แผนที่แหล่งเรียนรู้',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            actions: [
+              IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded)),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : error != null
-              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('ไม่สามารถโหลดแผนที่ได้\n$error', textAlign: TextAlign.center)))
-              : Column(
-                  children: [
-                    _filters(),
-                    Expanded(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFF0FAF8), Color(0xFFEAF4FF), Color(0xFFF8F5FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: loading
+            ? const Center(child: CircularProgressIndicator())
+            : error != null
+                ? Center(
+                    child: Container(
+                      margin: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .92),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: .08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        'ไม่สามารถโหลดแผนที่ได้\n$error',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  )
+                : Column(
+                    children: [
+                      _filters(),
+                      Expanded(
                       child: Stack(
                         children: [
                           FlutterMap(
@@ -201,11 +247,29 @@ class _MapPageState extends State<MapPage> {
                           Positioned(
                             left: 14,
                             top: 14,
-                            child: Card(
-                              margin: EdgeInsets.zero,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF00796B), Color(0xFF26A69A)],
+                                ),
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: .16),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                                child: Text('พบ ${filteredPoints.length} จุด', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                child: Text(
+                                  'พบ ${filteredPoints.length} จุด',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -227,13 +291,30 @@ class _MapPageState extends State<MapPage> {
                     ),
                   ],
                 ),
+      ),
     );
   }
 
   Widget _filters() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      color: Theme.of(context).colorScheme.surface,
+      margin: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFFFFF), Color(0xFFF3FAFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFB2DFDB), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00897B).withValues(alpha: .10),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

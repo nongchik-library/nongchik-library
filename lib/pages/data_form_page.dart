@@ -107,6 +107,7 @@ class _DataFormPageState extends State<DataFormPage> {
       case DataType.subdistrictLearningCenter:
       case DataType.touristAttraction:
       case DataType.traditionalFood:
+      case DataType.villageBookCorner:
         return 'other';
     }
   }
@@ -143,8 +144,8 @@ class _DataFormPageState extends State<DataFormPage> {
     weekdayHours = TextEditingController(text: r?['weekday_hours']?.toString() ?? '');
     weekendHours = TextEditingController(text: r?['weekend_hours']?.toString() ?? '');
     openingDays = TextEditingController(text: r?['opening_days']?.toString() ?? '');
-learnerCapacity = TextEditingController(text: r?['learner_capacity']?.toString() ?? '');
-parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString() ?? '');
+    learnerCapacity = TextEditingController(text: r?['learner_capacity']?.toString() ?? '');
+    parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString() ?? '');
     internet = TextEditingController(text: r?['internet']?.toString() ?? '');
     waterSupply = TextEditingController(text: r?['water_supply']?.toString() ?? '');
     electricity = TextEditingController(text: r?['electricity']?.toString() ?? '');
@@ -197,29 +198,64 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
 
   @override
   void dispose() {
-    for (final c in [name, firstName, lastName, gender, birthDate, educationLevel, currentOccupation, responsibleTeacher, learningProcess, description, backgroundHistory, resourceHistory, awards, subdistrict, address, contact, position, phone, lineId, facebook, tiktok, extra, buildingUse, permissionCase, independence, weekdayHours, weekendHours, openingDays, internet, waterSupply, electricity, toilet, notebook, desktop, tv, tablet, projector, tables, chairs, latitude, longitude]) {
+    for (final c in [name, firstName, lastName, gender, birthDate, educationLevel, currentOccupation, responsibleTeacher, learningProcess, description, backgroundHistory, resourceHistory, awards, subdistrict, address, contact, position, phone, lineId, facebook, tiktok, extra, buildingUse, permissionCase, independence, weekdayHours, weekendHours, openingDays, learnerCapacity, parkingCapacity, internet, waterSupply, electricity, toilet, notebook, desktop, tv, tablet, projector, tables, chairs, latitude, longitude]) {
       c.dispose();
     }
     super.dispose();
   }
 
+  List<Color> get _gradientColors {
+    switch (widget.type) {
+      case DataType.learningResource:
+        return const [Color(0xFF00796B), Color(0xFF26A69A), Color(0xFF80CBC4)];
+      case DataType.localWisdom:
+        return const [Color(0xFF2E7D32), Color(0xFF66BB6A), Color(0xFFA5D6A7)];
+      case DataType.localScholar:
+        return const [Color(0xFF6A1B9A), Color(0xFFAB47BC), Color(0xFFE1BEE7)];
+      case DataType.communityBookHouse:
+        return const [Color(0xFF1565C0), Color(0xFF42A5F5), Color(0xFFBBDEFB)];
+      case DataType.subdistrictLearningCenter:
+        return const [Color(0xFF3949AB), Color(0xFF5C6BC0), Color(0xFFC5CAE9)];
+      case DataType.touristAttraction:
+        return const [Color(0xFFE65100), Color(0xFFFF8A65), Color(0xFFFFCC80)];
+      case DataType.traditionalFood:
+        return const [Color(0xFFF57C00), Color(0xFFFFB300), Color(0xFFFFE082)];
+      case DataType.villageBookCorner:
+        return const [Color(0xFF00838F), Color(0xFF26C6DA), Color(0xFFB2EBF2)];
+    }
+  }
+
+  Color get _accent => _gradientColors.first;
+
+  BoxDecoration get _pageDecoration => BoxDecoration(
+    gradient: LinearGradient(
+      colors: [_gradientColors[2].withOpacity(.18), const Color(0xFFF8FBFC), _gradientColors[1].withOpacity(.07)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+  );
+
   InputDecoration decoration(String label, IconData icon) => InputDecoration(
     labelText: label,
-    prefixIcon: Icon(icon),
+    prefixIcon: Icon(icon, color: _accent),
     filled: true,
-    fillColor: Colors.white,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
+    fillColor: Colors.white.withOpacity(.96),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: _accent.withOpacity(.14))),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: _accent.withOpacity(.17))),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide(color: _accent, width: 2)),
+    errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.redAccent)),
+    focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: Colors.redAccent, width: 2)),
   );
 
   Widget card(String title, IconData icon, Widget child) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shadowColor: scheme.primary.withOpacity(.12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 0,
+      color: Colors.white.withOpacity(.88),
+      shadowColor: _accent.withOpacity(.10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24), side: BorderSide(color: _accent.withOpacity(.10))),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -229,11 +265,11 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
                 gradient: LinearGradient(
-                  colors: [scheme.primary, scheme.primaryContainer],
+                  colors: _gradientColors,
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                 ),
               ),
-              child: Icon(icon, color: scheme.onPrimary, size: 24),
+              child: Icon(icon, color: Colors.white, size: 24),
             ),
             const SizedBox(width: 12),
             Expanded(child: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: scheme.onSurface))),
@@ -292,7 +328,7 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
       bytes: bytes,
       fileName: file.name,
       mimeType: file.mimeType ?? 'image/jpeg',
-      folderName: '${subdistrict.text.trim()}/${widget.type.title}/ภาพแหล่งเรียนรู้',
+      folderName: '${subdistrict.text.trim()}/${widget.type.title}',
       category: uploadCategory,
       subdistrict: subdistrict.text.trim(),
     );
@@ -436,6 +472,8 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
         'weekday_hours': weekdayHours.text.trim(),
         'weekend_hours': weekendHours.text.trim(),
         'opening_days': openingDays.text.trim(),
+        'learner_capacity': _nullableInt(learnerCapacity.text),
+        'parking_capacity': _nullableInt(parkingCapacity.text),
         'internet': internet.text.trim(),
         'water_supply': waterSupply.text.trim(),
         'electricity': electricity.text.trim(),
@@ -464,6 +502,14 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
     } finally { if (mounted) setState(() => saving = false); }
   }
 
+  int? _nullableInt(String value) {
+    final text = value.trim();
+    if (text.isEmpty) return null;
+    final parsed = int.tryParse(text);
+    if (parsed == null) throw Exception('กรุณากรอกจำนวนเป็นตัวเลขจำนวนเต็ม');
+    return parsed;
+  }
+
   void _ok(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s)));
   void _error(String s) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s), duration: const Duration(seconds: 8)));
 
@@ -475,18 +521,42 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
 
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: _gradientColors, begin: Alignment.centerLeft, end: Alignment.centerRight))),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: Text(editing ? 'แก้ไข${widget.type.title}' : 'เพิ่ม${widget.type.title}'),
+        title: Row(children: [
+          Container(width: 36, height: 36, decoration: BoxDecoration(color: Colors.white.withOpacity(.18), borderRadius: BorderRadius.circular(11)), child: Icon(widget.type.icon, size: 21, color: Colors.white)),
+          const SizedBox(width: 10),
+          Flexible(child: Text(editing ? 'แก้ไข${widget.type.displayTitle}' : 'เพิ่ม${widget.type.displayTitle}', style: const TextStyle(fontWeight: FontWeight.w800))),
+        ]),
       ),
-      body: SafeArea(
+      body: Container(
+        decoration: _pageDecoration,
+        child: SafeArea(
         child: Form(
           key: formKey,
           child: ListView(
             padding: const EdgeInsets.all(18),
             children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(gradient: LinearGradient(colors: _gradientColors), borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: _accent.withOpacity(.18), blurRadius: 16, offset: const Offset(0, 7))]),
+                child: Row(children: [
+                  Container(width: 50, height: 50, decoration: BoxDecoration(color: Colors.white.withOpacity(.18), borderRadius: BorderRadius.circular(16)), child: Icon(widget.type.icon, color: Colors.white, size: 28)),
+                  const SizedBox(width: 13),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(editing ? 'ปรับปรุงข้อมูล${widget.type.displayTitle}' : 'เพิ่มข้อมูล${widget.type.displayTitle}', style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 4),
+                    Text('กรอกข้อมูลให้ครบถ้วน เพื่อจัดเก็บเป็นฐานข้อมูลคุณภาพของชุมชน', style: TextStyle(color: Colors.white.withOpacity(.9), fontSize: 12.5)),
+                  ])),
+                ]),
+              ),
               if (!active)
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -505,7 +575,7 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
                   children: [
                     TextFormField(
                       controller: name,
-                      decoration: decoration('ชื่อ${widget.type.title} *', Icons.title),
+                      decoration: decoration('ชื่อ${widget.type.displayTitle} *', Icons.title),
                       validator: (v) => v == null || v.trim().isEmpty ? 'กรุณาระบุชื่อ' : null,
                     ),
                     const SizedBox(height: 12),
@@ -547,7 +617,7 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
                           isExpanded: true,
                           decoration: decoration(widget.type == DataType.subdistrictLearningCenter ? 'ศกร.ระดับตำบล *' : 'ตำบล *', Icons.location_city),
                           items: subdistrictOptions
-                              .map((s) => DropdownMenuItem<String>(value: s, child: Text(widget.type == DataType.subdistrictLearningCenter ? 'ศกร.ระดับตำบล$s' : s)))
+                              .map((s) => DropdownMenuItem<String>(value: s, child: Text(widget.type == DataType.subdistrictLearningCenter ? 'ศกร.ระดับตำบล $s' : s)))
                               .toList(),
                           onChanged: isAdmin
                               ? (v) {
@@ -665,57 +735,14 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
                 'ข้อมูลอาคารสถานที่',
                   Icons.apartment_outlined,
                   Column(
-  children: [
-    TextFormField(
-      controller: buildingUse,
-      maxLines: 2,
-      decoration: decoration(
-        'ลักษณะการใช้อาคาร',
-        Icons.business_outlined,
-      ),
-    ),
-    const SizedBox(height: 12),
-
-    TextFormField(
-      controller: permissionCase,
-      maxLines: 2,
-      decoration: decoration(
-        'กรณีได้รับอนุญาต',
-        Icons.fact_check_outlined,
-      ),
-    ),
-    const SizedBox(height: 12),
-
-    TextFormField(
-      controller: independence,
-      maxLines: 2,
-      decoration: decoration(
-        'ความเป็นเอกเทศ',
-        Icons.business_outlined,
-      ),
-    ),
-    const SizedBox(height: 12),
-
-    TextFormField(
-      controller: learnerCapacity,
-      keyboardType: TextInputType.number,
-      decoration: decoration(
-        'จำนวนผู้เรียนที่รองรับ',
-        Icons.groups_outlined,
-      ),
-    ),
-    const SizedBox(height: 12),
-
-    TextFormField(
-      controller: parkingCapacity,
-      keyboardType: TextInputType.number,
-      decoration: decoration(
-        'จำนวนที่จอดรถ',
-        Icons.local_parking_outlined,
-      ),
-    ),
-  ],
-),
+                    children: [
+                      TextFormField(controller: buildingUse, maxLines: 2, decoration: decoration('ลักษณะการใช้อาคาร', Icons.business_outlined)),
+                      const SizedBox(height: 12),
+                      TextFormField(controller: permissionCase, maxLines: 2, decoration: decoration('กรณีได้รับอนุญาต', Icons.fact_check_outlined)),
+                      const SizedBox(height: 12),
+                      TextFormField(controller: independence, maxLines: 2, decoration: decoration('ความเป็นเอกเทศ', Icons.domain_outlined)),
+                    ],
+                  ),
                 ),
                 card(
                   'เวลาเปิดทำการ',
@@ -727,6 +754,10 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
                       TextFormField(controller: weekendHours, decoration: decoration('วันเสาร์-อาทิตย์', Icons.weekend_outlined)),
                       const SizedBox(height: 12),
                       TextFormField(controller: openingDays, decoration: decoration('วันเปิดทำการ', Icons.calendar_month_outlined)),
+                      const SizedBox(height: 12),
+                      TextFormField(controller: learnerCapacity, keyboardType: TextInputType.number, decoration: decoration('ความจุรองรับผู้เข้าเรียนรู้ (คน)', Icons.groups_outlined)),
+                      const SizedBox(height: 12),
+                      TextFormField(controller: parkingCapacity, keyboardType: TextInputType.number, decoration: decoration('ที่จอดรถรองรับได้ (คัน)', Icons.local_parking_outlined)),
                     ],
                   ),
                 ),
@@ -775,7 +806,7 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
                   children: [
                     TextFormField(controller: backgroundHistory, maxLines: 5, decoration: decoration('ประวัติความเป็นมา', Icons.history_edu)),
                     const SizedBox(height: 12),
-                    TextFormField(controller: resourceHistory, maxLines: 5, decoration: decoration('ประวัติของแหล่งเรียนรู้', Icons.menu_book_outlined)),
+                    TextFormField(controller: resourceHistory, maxLines: 5, decoration: decoration(_resourceHistoryLabel, Icons.menu_book_outlined)),
                     const SizedBox(height: 12),
                     TextFormField(controller: learningProcess, maxLines: 5, decoration: decoration('กระบวนการเรียนรู้', Icons.auto_stories_outlined)),
                     const SizedBox(height: 12),
@@ -925,13 +956,17 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
                 child: const Text('ข้อมูลจะถูกส่งเป็น “รอตรวจสอบ” และจะแสดงต่อสาธารณะหลังแอดมินอนุมัติ'),
               ),
               SizedBox(
-                height: 52,
-                child: FilledButton.icon(
-                  onPressed: saving || !active ? null : save,
-                  icon: saving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.save_outlined),
-                  label: Text(saving ? 'กำลังบันทึก...' : 'บันทึกและส่งให้ห้องสมุดตรวจสอบ'),
+                height: 56,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: LinearGradient(colors: _gradientColors), borderRadius: BorderRadius.circular(17), boxShadow: [BoxShadow(color: _accent.withOpacity(.22), blurRadius: 14, offset: const Offset(0, 7))]),
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent),
+                    onPressed: saving || !active ? null : save,
+                    icon: saving
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.save_outlined),
+                    label: Text(saving ? 'กำลังบันทึก...' : 'บันทึกและส่งให้ห้องสมุดตรวจสอบ', style: const TextStyle(fontWeight: FontWeight.w800)),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -939,8 +974,13 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
           ),
         ),
       ),
+    ),
     );
   }
+
+  String get _resourceHistoryLabel => widget.type == DataType.subdistrictLearningCenter
+      ? 'ประวัติ ศกร.ระดับตำบล'
+      : 'ประวัติ${widget.type.title}';
 
   String get _extraLabel {
     switch (widget.type) {
@@ -951,6 +991,7 @@ parkingCapacity = TextEditingController(text: r?['parking_capacity']?.toString()
       case DataType.subdistrictLearningCenter: return 'ข้อมูลบริการ / กิจกรรมของ ศกร.';
       case DataType.touristAttraction: return 'จุดเด่น / ข้อมูลการท่องเที่ยว';
       case DataType.traditionalFood: return 'ส่วนผสม / วิธีทำ / เรื่องราวของอาหาร';
+      case DataType.villageBookCorner: return 'รายละเอียดมุมหนังสือ / กิจกรรมส่งเสริมการอ่าน';
     }
   }
 }

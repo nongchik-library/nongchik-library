@@ -19,6 +19,7 @@ class _AdminReviewPageState extends State<AdminReviewPage> {
     'subdistrict_learning_centers': 'ศกร.ระดับตำบล',
     'tourist_attractions': 'แหล่งท่องเที่ยวในตำบล',
     'traditional_foods': 'อาหาร/ขนมโบราณในชุมชน',
+    'village_book_corners': 'มุมหนังสือหมู่บ้าน',
   };
 
   List<Map<String, dynamic>> items = [];
@@ -109,33 +110,79 @@ class _AdminReviewPageState extends State<AdminReviewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ศูนย์ตรวจสอบข้อมูล'),
-        actions: [
-          IconButton(
-            onPressed: load,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'รีเฟรช',
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF00897B), Color(0xFF26A69A), Color(0xFF42A5F5)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
           ),
-        ],
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            title: const Text(
+              'ศูนย์ตรวจสอบข้อมูล',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            actions: [
+              IconButton(
+                onPressed: load,
+                icon: const Icon(Icons.refresh_rounded),
+                tooltip: 'รีเฟรช',
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+        ),
       ),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : items.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.verified, size: 64),
-                      SizedBox(height: 12),
-                      Text(
-                        'ไม่มีข้อมูลที่รอตรวจสอบ',
-                        style: TextStyle(fontSize: 18),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFF0FAF8), Color(0xFFEAF4FF), Color(0xFFF8F5FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: loading
+            ? const Center(child: CircularProgressIndicator())
+            : items.isEmpty
+                ? Center(
+                    child: Container(
+                      margin: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 46),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFFFFF), Color(0xFFF0F7FF)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(color: Color(0xFFB2DFDB)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFF00897B).withValues(alpha: .10),
+                            blurRadius: 24,
+                            offset: Offset(0, 10),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
+                      child: const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.verified_rounded, size: 72, color: Color(0xFF00897B)),
+                          SizedBox(height: 14),
+                          Text(
+                            'ไม่มีข้อมูลที่รอตรวจสอบ',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : RefreshIndicator(
                   onRefresh: load,
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -145,8 +192,24 @@ class _AdminReviewPageState extends State<AdminReviewPage> {
                       final description =
                           row['description']?.toString() ?? '';
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 14),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFFFFF), Color(0xFFF4FAFF)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: const Color(0xFFB2DFDB)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF00897B).withValues(alpha: .08),
+                              blurRadius: 18,
+                              offset: const Offset(0, 7),
+                            ),
+                          ],
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(14),
                           child: Column(
@@ -206,6 +269,7 @@ class _AdminReviewPageState extends State<AdminReviewPage> {
                     },
                   ),
                 ),
+      ),
     );
   }
 }

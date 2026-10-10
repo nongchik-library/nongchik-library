@@ -131,6 +131,9 @@ class _DataDetailPageState extends State<DataDetailPage> {
   }
 
   String _categoryPrintName() => widget.type.title;
+  String get _resourceHistoryLabel => widget.type == DataType.subdistrictLearningCenter
+      ? 'ประวัติ ศกร.ระดับตำบล'
+      : 'ประวัติ${widget.type.title}';
 
   String _driveProxyUrl(String id, {int size = 640}) {
     return 'https://ddldegnsupfeqfzbjjcr.supabase.co/functions/v1/drive-image'
@@ -241,7 +244,7 @@ class _DataDetailPageState extends State<DataDetailPage> {
         _detailRowHtml('เบอร์โทรติดต่อ', phone),
       ],
       _detailRowHtml('ประวัติความเป็นมา', backgroundHistory),
-      _detailRowHtml('ประวัติของแหล่งเรียนรู้', resourceHistory),
+      _detailRowHtml(_resourceHistoryLabel, resourceHistory),
       if (widget.type != DataType.subdistrictLearningCenter) _detailRowHtml('กระบวนการเรียนรู้', learningProcess),
       _detailRowHtml('รางวัลที่ได้รับ', awards),
       ...[
@@ -251,6 +254,8 @@ class _DataDetailPageState extends State<DataDetailPage> {
         _detailRowHtml('วันจันทร์-ศุกร์', row['weekday_hours']),
         _detailRowHtml('วันเสาร์-อาทิตย์', row['weekend_hours']),
         _detailRowHtml('วันเปิดทำการ', row['opening_days']),
+        _detailRowHtml('ความจุรองรับผู้เข้าเรียนรู้ (คน)', row['learner_capacity']),
+        _detailRowHtml('ที่จอดรถรองรับได้ (คัน)', row['parking_capacity']),
         _detailRowHtml('อินเตอร์เน็ต', row['internet']),
         _detailRowHtml('น้ำประปา', row['water_supply']),
         _detailRowHtml('ไฟฟ้า', row['electricity']),
@@ -629,13 +634,13 @@ table{width:100%;border-collapse:collapse;margin-top:3mm}td{border:1px solid #d8
 <div class="hero"><div class="category">${esc(_categoryPrintName())}</div><h1>${esc(name)}</h1>${personName.isNotEmpty ? '<div class="location"><strong>ผู้ให้ข้อมูล: ${esc(personName)}</strong></div>' : ''}<div class="location">${subdistrict.isNotEmpty ? '${widget.type == DataType.subdistrictLearningCenter ? 'ศกร.ระดับตำบล' : 'ตำบล'}${esc(subdistrict)} • ' : ''}อำเภอหนองจิก • จังหวัดปัตตานี</div><span class="badge ${row['status']?.toString() == 'approved' ? 'approved' : 'pending'}">สถานะ: ${esc(status)}</span></div>
 $personWordHtml
 <section class="section"><div class="section-title"><span class="num">02</span>ภาพประกอบข้อมูล</div><div style="margin-top:3mm">${photosHtml}</div></section>
-<section class="section"><div class="section-title"><span class="num">02</span>รายละเอียดข้อมูล</div><table>${cell('รายละเอียด',description)}${cell('ที่อยู่ / สถานที่',address)}${cell('ผู้รับผิดชอบ',contact)}${widget.type == DataType.subdistrictLearningCenter ? '${cell('ตำแหน่ง',position)}${cell('เบอร์โทรศัพท์',phone)}' : ''}${cell('ID Line',lineId)}${cell('Facebook',facebook)}${cell('TikTok',tiktok)}${cell(_categoryPrintName() == 'แหล่งเรียนรู้' ? 'ประเภท / กิจกรรมการเรียนรู้' : 'ข้อมูลเพิ่มเติม',extra)}${widget.type != DataType.subdistrictLearningCenter ? '${cell('เพศ',gender)}${cell('วัน เดือน ปี เกิด',birthDate)}${cell('จบการศึกษาระดับ',educationLevel)}${cell('อาชีพปัจจุบัน',currentOccupation)}${cell('ครูผู้รับผิดชอบ',responsibleTeacher)}${cell('ตำแหน่ง',position)}${cell('เบอร์โทรติดต่อ',phone)}' : ''}${cell('ประวัติความเป็นมา',backgroundHistory)}${cell('ประวัติของแหล่งเรียนรู้',resourceHistory)}${widget.type != DataType.subdistrictLearningCenter ? cell('กระบวนการเรียนรู้',learningProcess) : ''}${cell('รางวัลที่ได้รับ',awards)}${'''
+<section class="section"><div class="section-title"><span class="num">02</span>รายละเอียดข้อมูล</div><table>${cell('รายละเอียด',description)}${cell('ที่อยู่ / สถานที่',address)}${cell('ผู้รับผิดชอบ',contact)}${widget.type == DataType.subdistrictLearningCenter ? '${cell('ตำแหน่ง',position)}${cell('เบอร์โทรศัพท์',phone)}' : ''}${cell('ID Line',lineId)}${cell('Facebook',facebook)}${cell('TikTok',tiktok)}${cell(_categoryPrintName() == 'แหล่งเรียนรู้' ? 'ประเภท / กิจกรรมการเรียนรู้' : 'ข้อมูลเพิ่มเติม',extra)}${widget.type != DataType.subdistrictLearningCenter ? '${cell('เพศ',gender)}${cell('วัน เดือน ปี เกิด',birthDate)}${cell('จบการศึกษาระดับ',educationLevel)}${cell('อาชีพปัจจุบัน',currentOccupation)}${cell('ครูผู้รับผิดชอบ',responsibleTeacher)}${cell('ตำแหน่ง',position)}${cell('เบอร์โทรติดต่อ',phone)}' : ''}${cell('ประวัติความเป็นมา',backgroundHistory)}${cell(_resourceHistoryLabel,resourceHistory)}${widget.type != DataType.subdistrictLearningCenter ? cell('กระบวนการเรียนรู้',learningProcess) : ''}${cell('รางวัลที่ได้รับ',awards)}${'''
 ${cell('ลักษณะการใช้อาคาร',row['building_use']?.toString() ?? '')}
 ${cell('กรณีได้รับอนุญาต',row['permission_case']?.toString() ?? '')}
 ${cell('ความเป็นเอกเทศ',row['independence']?.toString() ?? '')}
 ${cell('วันจันทร์-ศุกร์',row['weekday_hours']?.toString() ?? '')}
 ${cell('วันเสาร์-อาทิตย์',row['weekend_hours']?.toString() ?? '')}
-${cell('วันเปิดทำการ',row['opening_days']?.toString() ?? '')}
+${cell('วันเปิดทำการ',row['opening_days']?.toString() ?? '')}${cell('ความจุรองรับผู้เข้าเรียนรู้ (คน)',row['learner_capacity']?.toString() ?? '')}${cell('ที่จอดรถรองรับได้ (คัน)',row['parking_capacity']?.toString() ?? '')}
 ${cell('อินเตอร์เน็ต',row['internet']?.toString() ?? '')}
 ${cell('น้ำประปา',row['water_supply']?.toString() ?? '')}
 ${cell('ไฟฟ้า',row['electricity']?.toString() ?? '')}
@@ -1091,7 +1096,7 @@ ${certificateHtml}
                   _infoCard(icon: Icons.phone_in_talk_outlined, title: 'เบอร์โทรติดต่อ', value: row['contact_phone']?.toString() ?? '-'),
                 ],
                 _infoCard(icon: Icons.history, title: 'ประวัติความเป็นมา', value: row['background_history']?.toString() ?? '-'),
-                _infoCard(icon: Icons.menu_book_outlined, title: 'ประวัติของแหล่งเรียนรู้', value: row['resource_history']?.toString() ?? '-'),
+                _infoCard(icon: Icons.menu_book_outlined, title: _resourceHistoryLabel, value: row['resource_history']?.toString() ?? '-'),
                 if (widget.type != DataType.subdistrictLearningCenter)
                   _infoCard(icon: Icons.auto_stories_outlined, title: 'กระบวนการเรียนรู้', value: row['learning_process']?.toString() ?? '-'),
                 _infoCard(icon: Icons.emoji_events_outlined, title: 'รางวัลที่ได้รับ', value: row['awards']?.toString() ?? '-'),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
+import 'admin_review_page.dart';
+import 'dashboard_page.dart';
 import 'data_list_page.dart';
 import 'file_library_page.dart';
-import 'admin_review_page.dart';
 import 'login_page.dart';
 import 'map_page.dart';
 import 'user_management_page.dart';
@@ -31,259 +32,106 @@ class _HomePageState extends State<HomePage> {
     if (u == null) return;
     try {
       final p = await c.from('profiles').select('role,subdistrict,is_active').eq('id', u.id).maybeSingle();
-      if (mounted) setState(() {
-        admin = p?['role'] == 'admin';
-        assignedSubdistrict = p?['subdistrict']?.toString() ?? '';
-      });
+      if (mounted) {
+        setState(() {
+          admin = p?['role'] == 'admin';
+          assignedSubdistrict = p?['subdistrict']?.toString() ?? '';
+        });
+      }
     } catch (_) {}
   }
 
   Future<void> _logout() async {
     await AuthService().signOut();
     if (!mounted) return;
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-      (_) => false,
-    );
+    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (_) => false);
   }
 
   void _open(DataType type) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => DataListPage(type: type)),
+    Navigator.push(context, MaterialPageRoute(builder: (_) => DataListPage(type: type)));
+  }
+
+  Widget _menuTile({required IconData icon, required String title, required String subtitle, required Color color, required VoidCallback onTap}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(15),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .72),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.white.withValues(alpha: .75)),
+            ),
+            child: Row(children: [
+              Container(width: 38, height: 38, decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 21)),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10.5, color: Colors.black54)),
+              ])),
+              Icon(Icons.chevron_right_rounded, color: color, size: 19),
+            ]),
+          ),
+        ),
+      ),
     );
   }
 
-  Widget card(
-    IconData icon,
-    String title,
-    String subtitle,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                color.withValues(alpha: 0.13),
-                Colors.white,
-              ],
-            ),
+  Widget _sidebar() {
+    return Container(
+      width: 310,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFE8F6F3), Color(0xFFF7FAFF)]),
+        border: Border(right: BorderSide(color: Color(0xFFD6E7E3))),
+      ),
+      child: SafeArea(
+        child: Column(children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+            child: Row(children: [
+              Container(width: 48, height: 48, decoration: BoxDecoration(color: const Color(0xFF00897B), borderRadius: BorderRadius.circular(15)), child: const Icon(Icons.local_library_rounded, color: Colors.white, size: 28)),
+              const SizedBox(width: 12),
+              const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('คลังข้อมูลหนองจิก', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)), Text('งานการศึกษาตลอดชีวิต', style: TextStyle(fontSize: 11, color: Colors.black54))])),
+            ]),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            leading: Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.12),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Text(subtitle),
-            ),
-            trailing: Icon(Icons.arrow_forward_ios_rounded, size: 18, color: color),
-          ),
-        ),
+          const Divider(height: 1),
+          Expanded(child: ListView(padding: const EdgeInsets.fromLTRB(12, 12, 12, 16), children: [
+            _menuTile(icon: Icons.dashboard_rounded, title: 'Dashboard', subtitle: 'ภาพรวมความก้าวหน้า', color: const Color(0xFF00796B), onTap: () {}),
+            const Padding(padding: EdgeInsets.fromLTRB(8, 8, 8, 8), child: Text('เมนูหลัก', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black45))),
+            _menuTile(icon: Icons.menu_book_rounded, title: 'แหล่งเรียนรู้', subtitle: 'ข้อมูลพร้อมรูปภาพและ GPS', color: Colors.green, onTap: () => _open(DataType.learningResource)),
+            _menuTile(icon: Icons.eco_rounded, title: 'ภูมิปัญญาท้องถิ่น', subtitle: 'ภูมิปัญญาและการสืบทอด', color: Colors.teal, onTap: () => _open(DataType.localWisdom)),
+            _menuTile(icon: Icons.person_rounded, title: 'ปราชญ์ชาวบ้าน', subtitle: 'ผู้รู้และความเชี่ยวชาญ', color: Colors.deepPurple, onTap: () => _open(DataType.localScholar)),
+            _menuTile(icon: Icons.home_work_rounded, title: 'บ้านหนังสือชุมชน', subtitle: 'บ้านหนังสือพร้อม GPS', color: Colors.blue, onTap: () => _open(DataType.communityBookHouse)),
+            _menuTile(icon: Icons.location_city_rounded, title: 'ศกร.ระดับตำบล', subtitle: 'ข้อมูล ศกร.ระดับตำบล', color: Colors.indigo, onTap: () => _open(DataType.subdistrictLearningCenter)),
+            _menuTile(icon: Icons.photo_camera_rounded, title: 'แหล่งท่องเที่ยวในตำบล', subtitle: 'สถานที่ท่องเที่ยวพร้อม GPS', color: Colors.pink, onTap: () => _open(DataType.touristAttraction)),
+            _menuTile(icon: Icons.restaurant_rounded, title: 'อาหาร/ขนมโบราณในชุมชน', subtitle: 'อาหาร ขนม และเรื่องราวชุมชน', color: Colors.orange, onTap: () => _open(DataType.traditionalFood)),
+            _menuTile(icon: Icons.local_library_rounded, title: 'มุมหนังสือหมู่บ้าน', subtitle: 'ข้อมูลมุมหนังสือและกิจกรรมส่งเสริมการอ่าน', color: const Color(0xFF6A1B9A), onTap: () => _open(DataType.villageBookCorner)),
+            const Padding(padding: EdgeInsets.fromLTRB(8, 12, 8, 8), child: Text('เครื่องมือระบบ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black45))),
+            _menuTile(icon: Icons.map_outlined, title: 'แผนที่แหล่งเรียนรู้', subtitle: 'แผนที่และพิกัด GPS ทั้งอำเภอ', color: Colors.red, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapPage()))),
+            _menuTile(icon: Icons.folder_copy_outlined, title: 'คลังรูปภาพและเอกสาร', subtitle: 'รูปภาพ • Word • PDF', color: Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FileLibraryPage()))),
+            if (admin) ...[
+              _menuTile(icon: Icons.manage_accounts_rounded, title: 'จัดการผู้ใช้งานและสิทธิ์', subtitle: 'Admin / Teacher / ตำบลที่รับผิดชอบ', color: Colors.blueGrey, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserManagementPage()))),
+              _menuTile(icon: Icons.verified_user_rounded, title: 'ศูนย์ตรวจสอบข้อมูล', subtitle: 'อนุมัติ / ไม่อนุมัติข้อมูล', color: Colors.green.shade700, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminReviewPage()))),
+            ],
+          ])),
+          const Divider(height: 1),
+          Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 10), child: ListTile(leading: const CircleAvatar(child: Icon(Icons.person)), title: Text(c.auth.currentUser?.email ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(admin ? 'Admin' : (assignedSubdistrict.isEmpty ? 'Teacher' : 'Teacher • $assignedSubdistrict')), trailing: IconButton(onPressed: _logout, icon: const Icon(Icons.logout_rounded), tooltip: 'ออกจากระบบ'))),
+        ]),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final email = c.auth.currentUser?.email ?? '';
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'งานการศึกษาตลอดชีวิต\nห้องสมุดประชาชนอำเภอหนองจิก\nศูนย์ส่งเสริมการเรียนรู้ระดับอำเภอหนองจิก\nสำนักงานส่งเสริมการเรียนรู้ประจำจังหวัดปัตตานี',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
-        children: [
-          Card(
-            clipBehavior: Clip.antiAlias,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF00796B), Color(0xFF4DB6AC)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white.withValues(alpha: 0.22),
-                    foregroundColor: Colors.white,
-                    child: const Icon(Icons.person, size: 30),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('ผู้ใช้งาน', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600)),
-                        Text(
-                          email,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 17,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          admin
-                              ? 'ผู้ดูแลระบบ (Admin)'
-                              : (assignedSubdistrict.isNotEmpty ? 'คุณครู • รับผิดชอบตำบล$assignedSubdistrict' : 'คุณครู • ยังไม่ได้กำหนดตำบล'),
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.92),
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'ระบบคลังข้อมูล',
-            style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary),
-          ),
-          const SizedBox(height: 12),
-          card(
-            Icons.map_outlined,
-            'แผนที่แหล่งเรียนรู้',
-            'แผนที่รวมข้อมูลและพิกัด GPS ทั้งอำเภอ',
-            Colors.red,
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MapPage()),
-            ),
-          ),
-          card(
-            Icons.folder_copy_outlined,
-            'คลังรูปภาพและเอกสาร',
-            'รูปภาพ • Word • PDF • ดาวน์โหลด',
-            Colors.teal,
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FileLibraryPage()),
-            ),
-          ),
-          card(
-            Icons.menu_book,
-            'แหล่งเรียนรู้',
-            'ข้อมูลพร้อมรูปภาพและพิกัด GPS',
-            Colors.green,
-            () => _open(DataType.learningResource),
-          ),
-          card(
-            Icons.eco,
-            'ภูมิปัญญาท้องถิ่น',
-            'ภูมิปัญญาและการสืบทอด',
-            Colors.green,
-            () => _open(DataType.localWisdom),
-          ),
-          card(
-            Icons.person,
-            'ปราชญ์ชาวบ้าน',
-            'ผู้รู้และความเชี่ยวชาญในชุมชน',
-            Colors.deepPurple,
-            () => _open(DataType.localScholar),
-          ),
-          card(
-            Icons.home_work,
-            'บ้านหนังสือชุมชน',
-            'บ้านหนังสือพร้อมพิกัด GPS',
-            Colors.blue,
-            () => _open(DataType.communityBookHouse),
-          ),
-          card(
-            Icons.location_city,
-            'ศกร.ระดับตำบล',
-            'ข้อมูล ศกร.ระดับตำบล',
-            Colors.indigo,
-            () => _open(DataType.subdistrictLearningCenter),
-          ),
-          card(
-            Icons.photo_camera,
-            'แหล่งท่องเที่ยวในตำบล',
-            'สถานที่ท่องเที่ยวพร้อมพิกัด GPS',
-            Colors.pink,
-            () => _open(DataType.touristAttraction),
-          ),
-          card(
-            Icons.restaurant,
-            'อาหาร/ขนมโบราณในชุมชน',
-            'อาหาร ขนม และเรื่องราวชุมชน',
-            Colors.orange,
-            () => _open(DataType.traditionalFood),
-          ),
-          if (admin) ...[
-            Card(
-              color: const Color(0xFFEAF0FF),
-              child: ListTile(
-                leading: const CircleAvatar(child: Icon(Icons.manage_accounts)),
-                title: const Text('จัดการผู้ใช้งานและสิทธิ์', style: TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text('กำหนดสิทธิ์ Admin / Teacher และตำบลที่รับผิดชอบ'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserManagementPage())),
-              ),
-            ),
-            Card(
-              color: const Color(0xFFE6F4F1),
-              child: ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.verified_user),
-                ),
-                title: const Text(
-                  'ศูนย์ตรวจสอบข้อมูล',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: const Text('อนุมัติ / ไม่อนุมัติข้อมูล'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminReviewPage()),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+      body: Row(children: [
+        _sidebar(),
+        const Expanded(child: DashboardPage()),
+      ]),
     );
   }
 }

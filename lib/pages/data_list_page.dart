@@ -12,6 +12,7 @@ enum DataType {
   subdistrictLearningCenter,
   touristAttraction,
   traditionalFood,
+  villageBookCorner,
 }
 
 extension DataTypeX on DataType {
@@ -31,6 +32,8 @@ extension DataTypeX on DataType {
         return 'tourist_attractions';
       case DataType.traditionalFood:
         return 'traditional_foods';
+      case DataType.villageBookCorner:
+        return 'village_book_corners';
     }
   }
 
@@ -50,8 +53,12 @@ extension DataTypeX on DataType {
         return 'แหล่งท่องเที่ยวในตำบล';
       case DataType.traditionalFood:
         return 'อาหาร/ขนมโบราณในชุมชน';
+      case DataType.villageBookCorner:
+        return 'มุมหนังสือหมู่บ้าน';
     }
   }
+
+  String get displayTitle => this == DataType.subdistrictLearningCenter ? ' ศกร.ระดับตำบล' : title;
 
   IconData get icon {
     switch (this) {
@@ -69,6 +76,8 @@ extension DataTypeX on DataType {
         return Icons.photo_camera;
       case DataType.traditionalFood:
         return Icons.restaurant;
+      case DataType.villageBookCorner:
+        return Icons.local_library;
     }
   }
 }
@@ -280,133 +289,254 @@ class _DataListPageState extends State<DataListPage> {
     _applyFilters();
   }
 
+  List<Color> get _gradientColors {
+    switch (widget.type) {
+      case DataType.learningResource:
+        return const [Color(0xFF00796B), Color(0xFF26A69A), Color(0xFF80CBC4)];
+      case DataType.localWisdom:
+        return const [Color(0xFF2E7D32), Color(0xFF66BB6A), Color(0xFFA5D6A7)];
+      case DataType.localScholar:
+        return const [Color(0xFF6A1B9A), Color(0xFFAB47BC), Color(0xFFE1BEE7)];
+      case DataType.communityBookHouse:
+        return const [Color(0xFF1565C0), Color(0xFF42A5F5), Color(0xFFBBDEFB)];
+      case DataType.subdistrictLearningCenter:
+        return const [Color(0xFF3949AB), Color(0xFF5C6BC0), Color(0xFFC5CAE9)];
+      case DataType.touristAttraction:
+        return const [Color(0xFFE65100), Color(0xFFFF8A65), Color(0xFFFFCC80)];
+      case DataType.traditionalFood:
+        return const [Color(0xFFF57C00), Color(0xFFFFB300), Color(0xFFFFE082)];
+      case DataType.villageBookCorner:
+        return const [Color(0xFF00838F), Color(0xFF26C6DA), Color(0xFFB2EBF2)];
+    }
+  }
+
+  Color get _accent => _gradientColors.first;
+
+  BoxDecoration get _pageDecoration => BoxDecoration(
+    gradient: LinearGradient(
+      colors: [
+        _gradientColors[2].withOpacity(.16),
+        const Color(0xFFF8FBFC),
+        _gradientColors[1].withOpacity(.08),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+  );
+
+  Widget _sectionHeader() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 16, 18, 2),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: _gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(color: _accent.withOpacity(.20), blurRadius: 18, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(.20),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.white.withOpacity(.35)),
+            ),
+            child: Icon(widget.type.icon, color: Colors.white, size: 25),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.type.title, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 2),
+                Text('คลังข้อมูล • ${filteredRows.length} รายการ', style: TextStyle(color: Colors.white.withOpacity(.88), fontSize: 12.5)),
+              ],
+            ),
+          ),
+          if (rows.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(color: Colors.white.withOpacity(.16), borderRadius: BorderRadius.circular(14)),
+              child: Text('${rows.length}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18)),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _filterArea() {
     final hasFilter = searchController.text.trim().isNotEmpty ||
         selectedSubdistrict != 'ทั้งหมด' ||
         selectedStatus != 'ทั้งหมด';
 
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                labelText: 'ค้นหาข้อมูล',
-                hintText: 'ชื่อ แหล่งเรียนรู้ ตำบล ที่อยู่ หรือรายละเอียด',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchController.text.isNotEmpty
-                    ? IconButton(
-                        onPressed: searchController.clear,
-                        icon: const Icon(Icons.clear),
-                      )
-                    : null,
-                border: const OutlineInputBorder(),
+    InputDecoration fieldDecoration(String label, IconData icon) => InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: _accent),
+      filled: true,
+      fillColor: Colors.white.withOpacity(.94),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(17), borderSide: BorderSide(color: _accent.withOpacity(.16))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(17), borderSide: BorderSide(color: _accent.withOpacity(.18))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(17), borderSide: BorderSide(color: _accent, width: 2)),
+    );
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 14, 18, 5),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.86),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _accent.withOpacity(.13)),
+        boxShadow: [BoxShadow(color: _accent.withOpacity(.08), blurRadius: 18, offset: const Offset(0, 7))],
+      ),
+      child: Column(
+        children: [
+          TextField(
+            controller: searchController,
+            decoration: fieldDecoration('ค้นหาข้อมูล', Icons.search).copyWith(hintText: 'ชื่อ แหล่งเรียนรู้ ตำบล ที่อยู่ หรือรายละเอียด',
+              prefixIcon: Icon(Icons.search, color: _accent),
+              suffixIcon: searchController.text.isNotEmpty
+                  ? IconButton(onPressed: searchController.clear, icon: const Icon(Icons.clear))
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: selectedSubdistrict,
+                  decoration: fieldDecoration('ตำบล', Icons.location_on_outlined),
+                  items: [
+                    const DropdownMenuItem(value: 'ทั้งหมด', child: Text('ทุกตำบล')),
+                    ...subdistricts.map((s) => DropdownMenuItem(value: s, child: Text(s))),
+                  ],
+                  onChanged: (value) { if (value == null) return; setState(() => selectedSubdistrict = value); _applyFilters(); },
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: selectedSubdistrict,
-                    decoration: const InputDecoration(
-                      labelText: 'ตำบล',
-                      prefixIcon: Icon(Icons.location_on_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: 'ทั้งหมด',
-                        child: Text('ทุกตำบล'),
-                      ),
-                      ...subdistricts.map(
-                        (s) => DropdownMenuItem(value: s, child: Text(s)),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => selectedSubdistrict = value);
-                      _applyFilters();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: DropdownButtonFormField<String>(
-                    initialValue: selectedStatus,
-                    decoration: const InputDecoration(
-                      labelText: 'สถานะ',
-                      prefixIcon: Icon(Icons.verified_outlined),
-                      border: OutlineInputBorder(),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'ทั้งหมด', child: Text('ทุกสถานะ')),
-                      DropdownMenuItem(value: 'approved', child: Text('อนุมัติแล้ว')),
-                      DropdownMenuItem(value: 'pending', child: Text('รอตรวจสอบ')),
-                      DropdownMenuItem(value: 'rejected', child: Text('ไม่อนุมัติ')),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => selectedStatus = value);
-                      _applyFilters();
-                    },
-                  ),
-                ),
-              ],
-            ),
-            if (hasFilter) ...[
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: _clearFilters,
-                  icon: const Icon(Icons.filter_alt_off),
-                  label: const Text('ล้างตัวกรอง'),
+              const SizedBox(width: 11),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: selectedStatus,
+                  decoration: fieldDecoration('สถานะ', Icons.verified_outlined),
+                  items: const [
+                    DropdownMenuItem(value: 'ทั้งหมด', child: Text('ทุกสถานะ')),
+                    DropdownMenuItem(value: 'approved', child: Text('อนุมัติแล้ว')),
+                    DropdownMenuItem(value: 'pending', child: Text('รอตรวจสอบ')),
+                    DropdownMenuItem(value: 'rejected', child: Text('ไม่อนุมัติ')),
+                  ],
+                  onChanged: (value) { if (value == null) return; setState(() => selectedStatus = value); _applyFilters(); },
                 ),
               ),
             ],
+          ),
+          if (hasFilter) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: _accent),
+                onPressed: _clearFilters,
+                icon: const Icon(Icons.filter_alt_off),
+                label: const Text('ล้างตัวกรอง'),
+              ),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildBody(BuildContext context) {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) return Center(child: CircularProgressIndicator(color: _accent));
 
     if (error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text('เกิดข้อผิดพลาด\n$error', textAlign: TextAlign.center),
-        ),
-      );
+      return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text('เกิดข้อผิดพลาด\n$error', textAlign: TextAlign.center)));
     }
 
     if (rows.isEmpty) {
+      // Empty state must remain scrollable on smaller browser windows.
+      // This prevents the bottom action from causing RenderFlex overflow.
       return Column(
         children: [
           _filterArea(),
           Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(widget.type.icon, size: 64, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 12),
-                  Text('ยังไม่มีข้อมูล${widget.type.title}'),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => _openForm(),
-                    icon: const Icon(Icons.add),
-                    label: const Text('เพิ่มข้อมูลแรก'),
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(22, 10, 22, 120),
+              children: [
+                Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(minHeight: 250),
+                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(.88),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: _accent.withOpacity(.10)),
+                    boxShadow: [
+                      BoxShadow(color: _accent.withOpacity(.10), blurRadius: 20, offset: const Offset(0, 8)),
+                    ],
                   ),
-                ],
-              ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: _gradientColors),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(widget.type.icon, size: 38, color: Colors.white),
+                      ),
+                      const SizedBox(height: 13),
+                      Text(
+                        'ยังไม่มีข้อมูล${widget.type.displayTitle}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'เริ่มต้นจัดเก็บข้อมูลในหมวดนี้ได้ทันที',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 15),
+                      SizedBox(
+                        height: 48,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: _gradientColors),
+                            borderRadius: BorderRadius.circular(15),
+                            boxShadow: [
+                              BoxShadow(color: _accent.withOpacity(.20), blurRadius: 12, offset: const Offset(0, 6)),
+                            ],
+                          ),
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(horizontal: 22),
+                            ),
+                            onPressed: () => _openForm(),
+                            icon: const Icon(Icons.add),
+                            label: const Text('เพิ่มข้อมูลแรก', style: TextStyle(fontWeight: FontWeight.w800)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -417,78 +547,47 @@ class _DataListPageState extends State<DataListPage> {
       children: [
         _filterArea(),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
-          child: Row(
-            children: [
-              Icon(widget.type.icon, size: 20, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                'พบ ${filteredRows.length} รายการ',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              if (filteredRows.length != rows.length)
-                Text('จากทั้งหมด ${rows.length} รายการ', style: const TextStyle(color: Colors.grey)),
-            ],
-          ),
+          padding: const EdgeInsets.fromLTRB(22, 8, 22, 6),
+          child: Row(children: [
+            Icon(widget.type.icon, size: 20, color: _accent), const SizedBox(width: 8),
+            Text('พบ ${filteredRows.length} รายการ', style: const TextStyle(fontWeight: FontWeight.w800)),
+            const Spacer(),
+            if (filteredRows.length != rows.length) Text('จากทั้งหมด ${rows.length} รายการ', style: TextStyle(color: Colors.grey.shade600)),
+          ]),
         ),
         Expanded(
           child: RefreshIndicator(
+            color: _accent,
             onRefresh: _load,
             child: filteredRows.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: const [
-                      SizedBox(height: 100),
-                      Icon(Icons.search_off, size: 56, color: Colors.grey),
-                      SizedBox(height: 12),
-                      Center(child: Text('ไม่พบข้อมูลที่ค้นหา')),
-                    ],
-                  )
+                ? ListView(physics: const AlwaysScrollableScrollPhysics(), children: [
+                    const SizedBox(height: 100), Icon(Icons.search_off, size: 58, color: Colors.grey), const SizedBox(height: 12), Center(child: Text('ไม่พบข้อมูลที่ค้นหา')),
+                  ])
                 : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+                    padding: const EdgeInsets.fromLTRB(18, 6, 18, 100),
                     itemCount: filteredRows.length,
                     itemBuilder: (context, index) {
                       final row = filteredRows[index];
                       final status = row['status']?.toString() ?? 'pending';
                       final photoPaths = row['photo_paths'];
                       final photoCount = photoPaths is List ? photoPaths.length : 0;
-
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 10),
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(.92), borderRadius: BorderRadius.circular(20), border: Border.all(color: _accent.withOpacity(.10)), boxShadow: [BoxShadow(color: _accent.withOpacity(.07), blurRadius: 14, offset: const Offset(0, 6))]),
                         child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          leading: CircleAvatar(child: Icon(widget.type.icon)),
-                          title: Text(
-                            row['name']?.toString() ?? '-',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              '${row['subdistrict'] ?? '-'}\n'
-                              '${_statusText(status)}${photoCount > 0 ? ' • $photoCount รูป' : ''}',
-                              style: TextStyle(color: _statusColor(status)),
-                            ),
-                          ),
-                          onTap: () async {
-                            final changed = await Navigator.push<bool>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => DataDetailPage(type: widget.type, row: row),
-                              ),
-                            );
-                            if (changed == true) await _load();
-                          },
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                          leading: Container(width: 48, height: 48, decoration: BoxDecoration(gradient: LinearGradient(colors: _gradientColors), borderRadius: BorderRadius.circular(15)), child: Icon(widget.type.icon, color: Colors.white)),
+                          title: Text(row['name']?.toString() ?? '-', style: const TextStyle(fontWeight: FontWeight.w800)),
+                          subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Wrap(spacing: 7, runSpacing: 5, children: [
+                            _chip(Icons.location_on_outlined, row['subdistrict']?.toString() ?? '-', _accent),
+                            _chip(Icons.verified_outlined, _statusText(status), _statusColor(status)),
+                            if (photoCount > 0) _chip(Icons.photo_library_outlined, '$photoCount รูป', Colors.blueGrey),
+                          ])),
+                          onTap: () async { final changed = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => DataDetailPage(type: widget.type, row: row))); if (changed == true) await _load(); },
                           trailing: PopupMenuButton<String>(
-                            onSelected: (value) {
-                              if (value == 'edit') _openForm(row);
-                              if (value == 'delete') _delete(row);
-                            },
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(value: 'edit', child: Text('แก้ไขข้อมูล')),
-                              if (admin) const PopupMenuItem(value: 'delete', child: Text('ลบข้อมูล')),
-                            ],
+                            icon: Icon(Icons.more_vert, color: _accent),
+                            onSelected: (value) { if (value == 'edit') _openForm(row); if (value == 'delete') _delete(row); },
+                            itemBuilder: (_) => [const PopupMenuItem(value: 'edit', child: Text('แก้ไขข้อมูล')), if (admin) const PopupMenuItem(value: 'delete', child: Text('ลบข้อมูล'))],
                           ),
                         ),
                       );
@@ -500,25 +599,37 @@ class _DataListPageState extends State<DataListPage> {
     );
   }
 
+  Widget _chip(IconData icon, String text, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(color: color.withOpacity(.08), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(.14))),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, size: 14, color: color), const SizedBox(width: 4), Text(text, style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.w700))]),
+  );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
-        title: Text(widget.type.title),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        flexibleSpace: Container(decoration: BoxDecoration(gradient: LinearGradient(colors: _gradientColors, begin: Alignment.centerLeft, end: Alignment.centerRight))),
+        titleSpacing: 0,
+        title: Row(children: [
+          Container(width: 36, height: 36, decoration: BoxDecoration(color: Colors.white.withOpacity(.18), borderRadius: BorderRadius.circular(11)), child: Icon(widget.type.icon, size: 21, color: Colors.white)),
+          const SizedBox(width: 10),
+          Text(widget.type.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+        ]),
         actions: [
-          IconButton(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'รีเฟรช',
-          ),
+          Container(margin: const EdgeInsets.only(right: 10, top: 8, bottom: 8), decoration: BoxDecoration(color: Colors.white.withOpacity(.16), borderRadius: BorderRadius.circular(13)), child: IconButton(onPressed: _load, icon: const Icon(Icons.refresh), tooltip: 'รีเฟรช')),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openForm(),
-        icon: const Icon(Icons.add),
-        label: const Text('เพิ่มข้อมูล'),
+      floatingActionButton: DecoratedBox(
+        decoration: BoxDecoration(gradient: LinearGradient(colors: _gradientColors), borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: _accent.withOpacity(.25), blurRadius: 15, offset: const Offset(0, 7))]),
+        child: FloatingActionButton.extended(backgroundColor: Colors.transparent, elevation: 0, onPressed: () => _openForm(), icon: const Icon(Icons.add), label: const Text('เพิ่มข้อมูล', style: TextStyle(fontWeight: FontWeight.w800))),
       ),
-      body: _buildBody(context),
+      body: Container(decoration: _pageDecoration, child: Column(children: [_sectionHeader(), Expanded(child: _buildBody(context))])),
     );
   }
+
 }
