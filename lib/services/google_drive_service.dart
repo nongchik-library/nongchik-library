@@ -1,12 +1,14 @@
+
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+const _supabasePublishableKey = String.fromEnvironment(
+  'SUPABASE_PUBLISHABLE_KEY',
+  defaultValue: '',
+);
+
 /// Google Drive gateway used by the app.
-///
-/// The actual Google OAuth refresh token/service credentials stay on the
-/// Supabase Edge Function. Never put a Google client secret or service-role
-/// key in Flutter.
 class GoogleDriveService {
   final SupabaseClient client = Supabase.instance.client;
 
@@ -35,9 +37,15 @@ class GoogleDriveService {
         'content_base64': base64Encode(bytes),
       },
     );
+
     final data = response.data;
-    if (data is! Map) throw Exception('Google Drive ตอบกลับไม่ถูกต้อง');
-    if (data['error'] != null) throw Exception(data['error'].toString());
+    if (data is! Map) {
+      throw Exception('Google Drive ตอบกลับไม่ถูกต้อง');
+    }
+    if (data['error'] != null) {
+      throw Exception(data['error'].toString());
+    }
+
     return Map<String, dynamic>.from(data);
   }
 
@@ -49,6 +57,30 @@ class GoogleDriveService {
 
   String viewUrl(String fileId) =>
       'https://drive.google.com/uc?export=view&id=${Uri.encodeComponent(fileId)}';
+
+  // Read images through the secured Supabase Edge Function.
+  String imageUrl(String fileId, {bool thumbnail = true}) {
+    const baseUrl = String.fromEnvironment(
+      'SUPABASE_URL',
+      defaultValue: 'https://ddldegnsupfeqfzbjjcr.supabase.co',
+    );
+
+    final query =
+        'file_id=${Uri.encodeQueryComponent(fileId)}'
+        '&thumb=${thumbnail ? '1' : '0'}';
+
+    return '${baseUrl.replaceFirst(RegExp(r'/+$'), '')}/functions/v1/drive-image?$query';
+  }
+
+  Map<String, String> get imageHeaders {
+    final token = client.auth.currentSession?.accessToken;
+
+    return {
+      'apikey': _supabasePublishableKey,
+      'Authorization':
+          'Bearer ${token ?? _supabasePublishableKey}',
+    };
+  }
 
   String downloadUrl(String fileId) =>
       'https://drive.google.com/uc?export=download&id=${Uri.encodeComponent(fileId)}';
