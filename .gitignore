@@ -1,3 +1,21 @@
+
 config.json
 .dart_tool/
 build/
+
+# Flutter generated files
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Supabase local temporary files
+supabase/.temp/
+
+# Environment and secret files
+.env
+.env.*
+!.env.example
+
+# Local IDE files
+.idea/
+.vscode/

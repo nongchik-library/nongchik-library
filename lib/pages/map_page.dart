@@ -63,6 +63,8 @@ class _MapPageState extends State<MapPage> {
     try {
       final points = <MapPoint>[];
       for (final type in DataType.values) {
+        // Activity reports are not geospatial records; they are shown in their dedicated report page.
+        if (type == DataType.villageBookCorner) continue;
         final data = await client
             .from(type.table)
             .select()

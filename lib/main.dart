@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'pages/login_page.dart';
 import 'pages/home_page.dart';
+import 'pages/welcome_page.dart';
 
 const supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
@@ -120,7 +121,7 @@ class NongChikLibraryApp extends StatelessWidget {
         ),
       ),
       home: Supabase.instance.client.auth.currentSession == null
-          ? const LoginPage()
+          ? const WelcomePage()
           : const HomePage(),
     );
   }

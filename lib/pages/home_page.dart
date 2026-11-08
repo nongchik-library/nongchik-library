@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 import 'admin_review_page.dart';
+import 'activity_reports_page.dart';
+import 'community_career_projects_page.dart';
 import 'dashboard_page.dart';
 import 'data_list_page.dart';
 import 'file_library_page.dart';
@@ -18,6 +20,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final c = Supabase.instance.client;
+  final GlobalKey<ScaffoldState> _responsiveScaffoldKey = GlobalKey<ScaffoldState>();
   bool admin = false;
   String assignedSubdistrict = '';
 
@@ -109,7 +112,9 @@ class _HomePageState extends State<HomePage> {
             _menuTile(icon: Icons.location_city_rounded, title: 'ศกร.ระดับตำบล', subtitle: 'ข้อมูล ศกร.ระดับตำบล', color: Colors.indigo, onTap: () => _open(DataType.subdistrictLearningCenter)),
             _menuTile(icon: Icons.photo_camera_rounded, title: 'แหล่งท่องเที่ยวในตำบล', subtitle: 'สถานที่ท่องเที่ยวพร้อม GPS', color: Colors.pink, onTap: () => _open(DataType.touristAttraction)),
             _menuTile(icon: Icons.restaurant_rounded, title: 'อาหาร/ขนมโบราณในชุมชน', subtitle: 'อาหาร ขนม และเรื่องราวชุมชน', color: Colors.orange, onTap: () => _open(DataType.traditionalFood)),
-            _menuTile(icon: Icons.local_library_rounded, title: 'มุมหนังสือหมู่บ้าน', subtitle: 'ข้อมูลมุมหนังสือและกิจกรรมส่งเสริมการอ่าน', color: const Color(0xFF6A1B9A), onTap: () => _open(DataType.villageBookCorner)),
+            _menuTile(icon: Icons.local_library_rounded, title: 'มุมหนังสือหมู่บ้าน', subtitle: 'ข้อมูลมุมหนังสือและกิจกรรมส่งเสริมการอ่าน', color: Colors.deepPurple, onTap: () => _open(DataType.villageBookCorner)),
+            _menuTile(icon: Icons.handyman_rounded, title: 'โครงการพัฒนาอาชีพชุมชน', subtitle: 'หลักสูตร กิจกรรม และผู้เข้าร่วมโครงการ', color: const Color(0xFF00897B), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CommunityCareerProjectsPage()))),
+            _menuTile(icon: Icons.assessment_rounded, title: 'รายงานผลกิจกรรม', subtitle: 'รายงานกิจกรรมที่เชื่อมโยงกับเมนูหลักทั้ง 8 เมนู', color: const Color(0xFF6A1B9A), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ActivityReportsPage()))),
             const Padding(padding: EdgeInsets.fromLTRB(8, 12, 8, 8), child: Text('เครื่องมือระบบ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.black45))),
             _menuTile(icon: Icons.map_outlined, title: 'แผนที่แหล่งเรียนรู้', subtitle: 'แผนที่และพิกัด GPS ทั้งอำเภอ', color: Colors.red, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MapPage()))),
             _menuTile(icon: Icons.folder_copy_outlined, title: 'คลังรูปภาพและเอกสาร', subtitle: 'รูปภาพ • Word • PDF', color: Colors.teal, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FileLibraryPage()))),
@@ -127,11 +132,35 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(children: [
-        _sidebar(),
-        const Expanded(child: DashboardPage()),
-      ]),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Keep the full sidebar on desktop. On tablets and phones, use a drawer
+        // so the main content can use the entire available width.
+        final desktop = constraints.maxWidth >= 1000;
+        if (desktop) {
+          return Scaffold(
+            body: Row(
+              children: [
+                _sidebar(),
+                const Expanded(child: DashboardPage()),
+              ],
+            ),
+          );
+        }
+        return Scaffold(
+          key: _responsiveScaffoldKey,
+          drawer: Drawer(
+            width: constraints.maxWidth < 420
+                ? constraints.maxWidth * .88
+                : 310,
+            child: _sidebar(),
+          ),
+          body: DashboardPage(
+            showMenuButton: true,
+            onMenuPressed: () => _responsiveScaffoldKey.currentState?.openDrawer(),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
@@ -385,36 +387,215 @@ class _DataFormPageState extends State<DataFormPage> {
   Future<void> chooseFromMap() async {
     final start = gps ?? const LatLng(6.74, 101.18);
     LatLng picked = start;
+    final mapController = MapController();
+    final searchController = TextEditingController();
+    List<Map<String, dynamic>> searchResults = [];
+    bool searching = false;
+    String? searchError;
+
+    Future<void> searchPlaces(
+      String query,
+      void Function(void Function()) updateDialog,
+    ) async {
+      if (query.trim().isEmpty) {
+        updateDialog(() {
+          searchResults = [];
+          searchError = null;
+        });
+        return;
+      }
+      updateDialog(() {
+        searching = true;
+        searchError = null;
+        searchResults = [];
+      });
+      try {
+        final uri = Uri.https(
+          'nominatim.openstreetmap.org',
+          '/search',
+          {
+            'q': query.trim(),
+            'format': 'jsonv2',
+            'limit': '6',
+            'countrycodes': 'th',
+            'addressdetails': '1',
+          },
+        );
+        final response = await http.get(
+          uri,
+          headers: const {
+            'User-Agent': 'NongchikPublicPortal/1.0 (Flutter map location search)',
+            'Accept-Language': 'th,en',
+          },
+        );
+        if (response.statusCode != 200) {
+          throw Exception('ค้นหาสถานที่ไม่สำเร็จ (${response.statusCode})');
+        }
+        final decoded = jsonDecode(response.body);
+        final results = (decoded as List)
+            .whereType<Map>()
+            .map((item) => Map<String, dynamic>.from(item))
+            .toList();
+        updateDialog(() {
+          searchResults = results;
+          searching = false;
+          if (results.isEmpty) searchError = 'ไม่พบสถานที่ ลองใช้คำค้นอื่น';
+        });
+      } catch (e) {
+        updateDialog(() {
+          searching = false;
+          searchError = 'ค้นหาไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองอีกครั้ง';
+        });
+      }
+    }
+
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('เลือกพิกัดจากแผนที่'),
-        content: SizedBox(
-          width: 700, height: 430,
-          child: FlutterMap(
-            options: MapOptions(
-              initialCenter: start,
-              initialZoom: gps == null ? 11 : 16,
-              onTap: (_, point) { picked = point; },
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, updateDialog) => AlertDialog(
+          title: const Text('ค้นหาและเลือกพิกัดจากแผนที่'),
+          content: SizedBox(
+            width: MediaQuery.of(dialogContext).size.width * 0.84,
+            height: MediaQuery.of(dialogContext).size.height * 0.66,
+            child: Column(
+              children: [
+                TextField(
+                  controller: searchController,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (value) => searchPlaces(value, updateDialog),
+                  decoration: InputDecoration(
+                    hintText: 'ค้นหาสถานที่ หมู่บ้าน ตำบล หรือสถานศึกษา',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: IconButton(
+                      tooltip: 'ค้นหา',
+                      icon: const Icon(Icons.arrow_forward),
+                      onPressed: () => searchPlaces(searchController.text, updateDialog),
+                    ),
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+                if (searching)
+                  const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: LinearProgressIndicator(),
+                  ),
+                if (searchError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        searchError!,
+                        style: TextStyle(color: Theme.of(context).colorScheme.error),
+                      ),
+                    ),
+                  ),
+                if (searchResults.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 126),
+                    margin: const EdgeInsets.only(top: 6, bottom: 6),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.black12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: searchResults.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final result = searchResults[index];
+                        final title = (result['name'] ?? result['display_name'] ?? 'สถานที่').toString();
+                        final lat = double.tryParse(result['lat']?.toString() ?? '');
+                        final lon = double.tryParse(result['lon']?.toString() ?? '');
+                        return ListTile(
+                          dense: true,
+                          leading: const Icon(Icons.place_outlined),
+                          title: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          onTap: lat == null || lon == null
+                              ? null
+                              : () {
+                                  picked = LatLng(lat, lon);
+                                  mapController.move(picked, 16);
+                                  updateDialog(() {
+                                    searchResults = [];
+                                    searchError = null;
+                                  });
+                                },
+                        );
+                      },
+                    ),
+                  ),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: FlutterMap(
+                      mapController: mapController,
+                      options: MapOptions(
+                        initialCenter: start,
+                        initialZoom: gps == null ? 11 : 16,
+                        onTap: (_, point) {
+                          picked = point;
+                          updateDialog(() {});
+                        },
+                      ),
+                      children: [
+                        TileLayer(
+                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          userAgentPackageName: 'com.nongchik.library',
+                        ),
+                        MarkerLayer(
+                          markers: [
+                            Marker(
+                              point: picked,
+                              width: 52,
+                              height: 52,
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.red,
+                                size: 46,
+                              ),
+                            ),
+                          ],
+                        ),
+                        RichAttributionWidget(
+                          attributions: const [
+                            TextSourceAttribution('OpenStreetMap contributors'),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'พิกัดที่เลือก: ${picked.latitude.toStringAsFixed(6)}, ${picked.longitude.toStringAsFixed(6)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
             ),
-            children: [
-              TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.nongchik.library'),
-              MarkerLayer(markers: [Marker(point: picked, width: 52, height: 52, child: const Icon(Icons.location_on, color: Colors.red, size: 46))]),
-              RichAttributionWidget(attributions: const [TextSourceAttribution('OpenStreetMap contributors')]),
-            ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('ยกเลิก'),
+            ),
+            FilledButton(
+              onPressed: () {
+                latitude.text = picked.latitude.toStringAsFixed(6);
+                longitude.text = picked.longitude.toStringAsFixed(6);
+                Navigator.pop(dialogContext);
+                if (mounted) setState(() {});
+              },
+              child: const Text('ใช้พิกัดนี้'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('ยกเลิก')),
-          FilledButton(onPressed: () {
-            latitude.text = picked.latitude.toStringAsFixed(6);
-            longitude.text = picked.longitude.toStringAsFixed(6);
-            Navigator.pop(dialogContext);
-            if (mounted) setState(() {});
-          }, child: const Text('ใช้พิกัดนี้')),
-        ],
       ),
     );
+    searchController.dispose();
   }
 
   Future<void> save() async {

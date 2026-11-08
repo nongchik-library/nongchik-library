@@ -206,6 +206,22 @@ class _DataListPageState extends State<DataListPage> {
     return profile?['role'] == 'admin';
   }
 
+  Future<void> _togglePublic(Map<String, dynamic> row) async {
+    if (!admin) return;
+    final next = row['is_public'] != true;
+    try {
+      await client.from(widget.type.table).update({'is_public': next}).eq('id', row['id']);
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(next ? 'เปิดเผยแพร่รายการนี้แล้ว' : 'ยกเลิกการเผยแพร่รายการนี้แล้ว'),
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('เปลี่ยนสถานะเผยแพร่ไม่สำเร็จ: $e')));
+    }
+  }
+
   Future<void> _delete(Map<String, dynamic> row) async {
     if (!await _isAdmin()) {
       if (!mounted) return;
@@ -581,13 +597,18 @@ class _DataListPageState extends State<DataListPage> {
                           subtitle: Padding(padding: const EdgeInsets.only(top: 6), child: Wrap(spacing: 7, runSpacing: 5, children: [
                             _chip(Icons.location_on_outlined, row['subdistrict']?.toString() ?? '-', _accent),
                             _chip(Icons.verified_outlined, _statusText(status), _statusColor(status)),
+                            if (admin) _chip(row['is_public'] == true ? Icons.public : Icons.public_off, row['is_public'] == true ? 'เผยแพร่แล้ว' : 'ยังไม่เผยแพร่', row['is_public'] == true ? Colors.teal : Colors.blueGrey),
                             if (photoCount > 0) _chip(Icons.photo_library_outlined, '$photoCount รูป', Colors.blueGrey),
                           ])),
                           onTap: () async { final changed = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => DataDetailPage(type: widget.type, row: row))); if (changed == true) await _load(); },
                           trailing: PopupMenuButton<String>(
                             icon: Icon(Icons.more_vert, color: _accent),
-                            onSelected: (value) { if (value == 'edit') _openForm(row); if (value == 'delete') _delete(row); },
-                            itemBuilder: (_) => [const PopupMenuItem(value: 'edit', child: Text('แก้ไขข้อมูล')), if (admin) const PopupMenuItem(value: 'delete', child: Text('ลบข้อมูล'))],
+                            onSelected: (value) { if (value == 'edit') _openForm(row); if (value == 'delete') _delete(row); if (value == 'publish') _togglePublic(row); },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(value: 'edit', child: Text('แก้ไขข้อมูล')),
+                              if (admin) PopupMenuItem(value: 'publish', child: Text(row['is_public'] == true ? 'ยกเลิกเผยแพร่' : 'เผยแพร่ให้ประชาชน')),
+                              if (admin) const PopupMenuItem(value: 'delete', child: Text('ลบข้อมูล')),
+                            ],
                           ),
                         ),
                       );

@@ -9,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'data_list_page.dart';
+import 'community_career_projects_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final bool showMenuButton;
@@ -41,6 +42,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Map<DataType, List<Map<String, dynamic>>> rowsByType = {};
   bool loading = true;
+  int careerProjectCount = 0;
   String? error;
 
   @override
@@ -55,19 +57,27 @@ class _DashboardPageState extends State<DashboardPage> {
     load();
   }
 
+  String _typeTitle(DataType type) => type.title;
+
   Future<void> load() async {
     if (mounted) setState(() { loading = true; error = null; });
     try {
       final result = <DataType, List<Map<String, dynamic>>>{};
       for (final type in types) {
+        final table = type.table;
         final data = await client
-            .from(type.table)
-            .select('id,subdistrict,status,created_at')
+            .from(table)
+            .select('id,subdistrict,created_at')
             .order('created_at', ascending: false);
         result[type] = List<Map<String, dynamic>>.from(data);
       }
+      final careerRows = await client.from('community_career_projects').select('id');
       if (!mounted) return;
-      setState(() { rowsByType = result; loading = false; });
+      setState(() {
+        rowsByType = result;
+        careerProjectCount = (careerRows as List).length;
+        loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() { loading = false; error = e.toString(); });
@@ -177,8 +187,8 @@ class _DashboardPageState extends State<DashboardPage> {
       return '<tr><td><strong>${esc(s)}</strong></td>$cells<td class="progress">${esc(pct(progressFor(s)))}</td></tr>';
     }).join();
     final totals = types.map((t) => '<td class="num total">${totalFor(t)}</td>').join();
-    final menuRows = types.map((t) => '<tr><td>${esc(t.title)}</td><td class="num">${totalFor(t)}</td></tr>').join();
-    final headers = types.map((t) => '<th>${esc(t.title)}</th>').join();
+    final menuRows = types.map((t) => '<tr><td>${esc(_typeTitle(t))}</td><td class="num">${totalFor(t)}</td></tr>').join();
+    final headers = types.map((t) => '<th>${esc(_typeTitle(t))}</th>').join();
     return '''<!doctype html><html lang="th"><head><meta charset="utf-8"><title>รายงานสรุปความก้าวหน้า</title>
 <style>
 @page{size:A4 landscape;margin:12mm}body{font-family:"Noto Sans Thai","Leelawadee UI",Tahoma,Arial,sans-serif;color:#173b35;margin:0;font-size:11px}h1{color:#087f70;font-size:20px;margin:0}h2{font-size:15px;color:#087f70;margin:20px 0 8px}.sub{color:#687a75;margin:4px 0 16px}.stats{display:flex;gap:10px;margin-bottom:18px}.stat{flex:1;padding:12px;border-radius:10px;background:#e9f7f4;border:1px solid #c8e4df}.stat b{display:block;font-size:18px;color:#087f70;margin-top:3px}table{width:100%;border-collapse:collapse}th{background:#d9f0ec;color:#075c52}th,td{border:1px solid #cbd9d5;padding:6px 5px}th{font-size:9px}td.num{text-align:center}td.progress{font-weight:800;text-align:center;color:#087f70}.total{font-weight:800}.bar{height:10px;background:#e2ece9;border-radius:8px;overflow:hidden}.fill{height:100%;background:#00897b}.footer{margin-top:18px;color:#778580;font-size:9px}@media print{.no-print{display:none}.pdf-hint{display:none}}
@@ -296,7 +306,7 @@ class _DashboardPageState extends State<DashboardPage> {
           const SizedBox(height: 8),
           Icon(_menuIcon(t), size: 19, color: color),
           const SizedBox(height: 4),
-          Text(t.title, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF52606B))),
+          Text(_typeTitle(t), maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF52606B))),
         ])));
       }).toList()),
     );
@@ -321,12 +331,12 @@ class _DashboardPageState extends State<DashboardPage> {
       final n = totalFor(types[i]);
       final share = total == 0 ? 0 : (n / total * 100).round();
       return Padding(
-        padding: const EdgeInsets.only(bottom: 7),
+        padding: const EdgeInsets.only(bottom: 5),
         child: Row(
           children: [
             Container(width: 10, height: 10, decoration: BoxDecoration(color: _menuColor(types[i]), shape: BoxShape.circle)),
             const SizedBox(width: 8),
-            Expanded(child: Text(types[i].title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
+            Expanded(child: Text(_typeTitle(types[i]), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
             const SizedBox(width: 5),
             Text('$n ($share%)', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF687681))),
           ],
@@ -627,11 +637,59 @@ class _DashboardPageState extends State<DashboardPage> {
                           ],
                         ),
                         const SizedBox(height: 18),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(22),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const CommunityCareerProjectsPage()),
+                            ),
+                            child: _glassCard(
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 54, height: 54,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE0F4F1),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: const Icon(Icons.engineering_rounded, color: Color(0xFF00897B), size: 30),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text('โครงการศูนย์ฝึกพัฒนาอาชีพ',
+                                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF17324A))),
+                                        const SizedBox(height: 4),
+                                        Text('ข้อมูลโครงการและกิจกรรมพัฒนาอาชีพชุมชน',
+                                          style: TextStyle(fontSize: 12, color: Colors.blueGrey.shade600)),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                                    decoration: BoxDecoration(color: const Color(0xFFE0F4F1), borderRadius: BorderRadius.circular(14)),
+                                    child: Column(children: [
+                                      Text('$careerProjectCount', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF00897B))),
+                                      const Text('โครงการ', style: TextStyle(fontSize: 10, color: Color(0xFF00897B))),
+                                    ]),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Color(0xFF00897B)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
                         _glassCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _sectionTitle('ความก้าวหน้ารวมของทั้งระบบ', '${pct(overallProgress())} • 8 เมนูหลัก × ${subdistricts.length} ตำบล', Icons.speed_rounded, const Color(0xFF08A58D)),
+                              _sectionTitle('ความก้าวหน้ารวมของทั้งระบบ', '${pct(overallProgress())} • 8 เมนูหลัก × ${subdistricts.length} ตำบล • โครงการอาชีพ $careerProjectCount โครงการ', Icons.speed_rounded, const Color(0xFF08A58D)),
                               const SizedBox(height: 15),
                               Stack(
                                 children: [
@@ -747,7 +805,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                                 children: [
                                                   Icon(_menuIcon(t), size: 13, color: n > 0 ? color : const Color(0xFF9AA5AB)),
                                                   const SizedBox(width: 4),
-                                                  Text('${t.title} ${n == 0 ? '—' : n}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: n > 0 ? color : const Color(0xFF7C898F))),
+                                                  Text('${_typeTitle(t)} ${n == 0 ? '—' : n}', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: n > 0 ? color : const Color(0xFF7C898F))),
                                                 ],
                                               ),
                                             );
@@ -783,7 +841,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                               children: [
                                                 Icon(_menuIcon(t), color: _menuColor(t), size: 18),
                                                 const SizedBox(width: 5),
-                                                Flexible(child: Text(t.title, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, color: _menuColor(t)))),
+                                                Flexible(child: Text(_typeTitle(t), textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w900, color: _menuColor(t)))),
                                               ],
                                             ),
                                           ),
